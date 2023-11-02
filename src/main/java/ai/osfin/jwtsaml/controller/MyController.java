@@ -61,6 +61,11 @@ public class MyController {
 		}
 	}
 
+	@GetMapping("/home-saml")
+	public Saml2AuthenticatedPrincipal homeForSaml(@RequestHeader(value = "Cookie", required = false) String cookie,
+	                              @AuthenticationPrincipal Saml2AuthenticatedPrincipal principal) {
+		return principal;
+	}
 
 	@PostMapping("/login/token")
 	public ResponseEntity<?> createJWTToken(@RequestBody AuthenticationRequest request) throws Exception {

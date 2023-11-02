@@ -32,7 +32,10 @@ import org.springframework.security.saml2.provider.service.web.DefaultRelyingPar
 import org.springframework.security.saml2.provider.service.web.RelyingPartyRegistrationResolver;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationTokenConverter;
 import org.springframework.security.saml2.provider.service.web.Saml2MetadataFilter;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.HeaderWriterLogoutHandler;
+import org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @EnableWebSecurity
@@ -70,7 +73,8 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 			.antMatchers("/private/**").authenticated();
 
 		http
-			.saml2Login(withDefaults())
+			.saml2Login(saml2 -> saml2
+				.successHandler(successHandler()))
 			.saml2Logout(withDefaults());
 
 		http
@@ -80,6 +84,12 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 		http
 			.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
+	}
+
+	private SimpleUrlAuthenticationSuccessHandler successHandler() {
+		SimpleUrlAuthenticationSuccessHandler successHandler = new SimpleUrlAuthenticationSuccessHandler();
+		successHandler.setDefaultTargetUrl("/home-saml"); // Set your custom success URL here
+		return successHandler;
 	}
 
 	@Bean
