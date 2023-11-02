@@ -16,23 +16,33 @@ import org.springframework.security.saml2.provider.service.authentication.Saml2A
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
 public class MyController {
+	@Autowired
+	private AuthenticationManager authenticationManager;
+
+	@Autowired
+	private MyUserDetailsService myUserDetailsService;
+
+	@Autowired
+	private JwtUtil jwtTokenUtil;
 
 	@GetMapping("/")
-	public ResponseEntity<?> home(@AuthenticationPrincipal Saml2AuthenticatedPrincipal principal) {
-
-//		boolean jsessionid = cookie != null && cookie.contains("JSESSIONID");
-//		if (!jsessionid) {
-//			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("JSESSIONID is not present");
-//		}
+	public ResponseEntity<?> home(@RequestHeader(value = "Cookie", required = false) String cookie,
+	                              @AuthenticationPrincipal Saml2AuthenticatedPrincipal principal) {
+		boolean jsessionid = cookie != null && cookie.contains("JSESSIONID");
+		if (!jsessionid) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("JSESSIONID is not present");
+		}
 
 		// Check if Saml2AuthenticatedPrincipal is null
 		if (principal == null || principal.getName() == null) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("SAML principal is null or doesn't contain a name");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.body("SAML principal is null or doesn't contain a name");
 		}
 
 		AuthenticationRequest request = new AuthenticationRequest();
@@ -46,30 +56,13 @@ public class MyController {
 			final String jwt = jwtTokenUtil.generateToken(userDetails);
 			return ResponseEntity.ok(new AuthenticationResponse(jwt));
 		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error generating JWT token");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body("Error generating JWT token");
 		}
 	}
 
-	@GetMapping("/public/hello")
-	public String helloPublic() {
-		return "Public, Open, Free";
-	}
 
-	@GetMapping("/private/hello")
-	public String hello() {
-		return "Private resource: Hello World!";
-	}
-
-	@Autowired
-	private AuthenticationManager authenticationManager;
-
-	@Autowired
-	private MyUserDetailsService myUserDetailsService;
-
-	@Autowired
-	private JwtUtil jwtTokenUtil;
-
-	@PostMapping("/authenticate")
+	@PostMapping("/login/token")
 	public ResponseEntity<?> createJWTToken(@RequestBody AuthenticationRequest request) throws Exception {
 		// Validate the username and password | Request vs UserDetailsService
 		try {
@@ -86,5 +79,15 @@ public class MyController {
 		// Generate JWT token
 		final String jwt = jwtTokenUtil.generateToken(userDetails);
 		return ResponseEntity.ok(new AuthenticationResponse(jwt));
+	}
+
+	@GetMapping("/public/hello")
+	public String helloPublic() {
+		return "Public, Open, Free";
+	}
+
+	@GetMapping("/private/hello")
+	public String hello() {
+		return "Private resource: Hello World!";
 	}
 }
