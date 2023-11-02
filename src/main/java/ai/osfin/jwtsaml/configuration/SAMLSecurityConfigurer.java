@@ -88,7 +88,7 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 
 	private SimpleUrlAuthenticationSuccessHandler successHandler() {
 		SimpleUrlAuthenticationSuccessHandler successHandler = new SimpleUrlAuthenticationSuccessHandler();
-		successHandler.setDefaultTargetUrl("/home-saml"); // Set your custom success URL here
+		successHandler.setDefaultTargetUrl("/login/saml-token"); // Set your custom success URL here
 		return successHandler;
 	}
 

@@ -12,6 +12,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticatedPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,7 +33,12 @@ public class MyController {
 	private JwtUtil jwtTokenUtil;
 
 	@GetMapping("/")
-	public ResponseEntity<?> home(@RequestHeader(value = "Cookie", required = false) String cookie,
+	public Saml2AuthenticatedPrincipal home(@AuthenticationPrincipal Saml2AuthenticatedPrincipal principal) {
+		return principal;
+	}
+
+	@GetMapping("/login/saml-token")
+	public ResponseEntity<?> samlToken(@RequestHeader(value = "Cookie", required = false) String cookie,
 	                              @AuthenticationPrincipal Saml2AuthenticatedPrincipal principal) {
 		boolean jsessionid = cookie != null && cookie.contains("JSESSIONID");
 		if (!jsessionid) {
@@ -61,29 +67,31 @@ public class MyController {
 		}
 	}
 
-	@GetMapping("/home-saml")
-	public Saml2AuthenticatedPrincipal homeForSaml(@RequestHeader(value = "Cookie", required = false) String cookie,
-	                              @AuthenticationPrincipal Saml2AuthenticatedPrincipal principal) {
-		return principal;
-	}
 
 	@PostMapping("/login/token")
 	public ResponseEntity<?> createJWTToken(@RequestBody AuthenticationRequest request) throws Exception {
-		// Validate the username and password | Request vs UserDetailsService
 		try {
 			authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
 			);
 		} catch (BadCredentialsException e) {
-			throw new Exception("Incorrect username or password", e);
+			throw new BadCredentialsException("Incorrect username or password");
 		}
-		// Fetch the complete user details from the database
-		final UserDetails userDetails = myUserDetailsService
-			.loadUserByUsername(request.getUsername());
 
-		// Generate JWT token
-		final String jwt = jwtTokenUtil.generateToken(userDetails);
-		return ResponseEntity.ok(new AuthenticationResponse(jwt));
+		// Fetch the complete user details from the database
+		final UserDetails userDetails = myUserDetailsService.loadUserByUsername(request.getUsername());
+
+		if (userDetails == null) {
+			throw new UsernameNotFoundException("User not found");
+		}
+
+		try {
+			// Generate JWT token
+			final String jwt = jwtTokenUtil.generateToken(userDetails);
+			return ResponseEntity.ok(new AuthenticationResponse(jwt));
+		} catch (Exception e) {
+			throw new Exception("Error generating JWT token", e);
+		}
 	}
 
 	@GetMapping("/public/hello")
