@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class JwtUtil {
-	private final String SECRET_KEY = "RANJITHMUNIYAPPA";
+	private final String SECRET_KEY = "RANJITH-MUNIYAPPA";
 
 	public Claims extractAllClaims(String token) {
 		return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
