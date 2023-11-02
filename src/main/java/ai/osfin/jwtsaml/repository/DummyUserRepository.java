@@ -17,6 +17,7 @@ public class DummyUserRepository implements UserRepository {
 		// Adding some dummy users for demonstration
 		userDatabase.put("user1", new MyUserDetail("user1", "password1"));
 		userDatabase.put("user2", new MyUserDetail("user2", "password2"));
+		userDatabase.put("ranjitm2001@gmail.com", new MyUserDetail("ranjitm2001@gmail.com", "password2"));
 	}
 
 	@Override
@@ -25,4 +26,3 @@ public class DummyUserRepository implements UserRepository {
 		return userDatabase.get(username);
 	}
 }
-
