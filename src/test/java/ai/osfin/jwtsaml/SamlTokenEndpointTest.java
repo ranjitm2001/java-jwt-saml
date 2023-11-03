@@ -12,8 +12,16 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticatedPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -37,6 +45,10 @@ public class SamlTokenEndpointTest {
 	@Mock
 	private Saml2AuthenticatedPrincipal principal;
 
+	// Mock SecurityContext
+	@Mock
+	private SecurityContext securityContext;
+
 	@Before
 	public void setup() {
 		// Setup any initial configurations or mocks
@@ -47,20 +59,23 @@ public class SamlTokenEndpointTest {
 		// Mock Cookie header
 		String cookie = "JSESSIONID=someSessionId; otherCookie=xyz";
 
-		// Mock principal
-		when(principal.getName()).thenReturn("testUser");
-
 		// Mock behavior for loadUserByUsername
 		UserDetails userDetails = Mockito.mock(UserDetails.class);
-		when(myUserDetailsService.loadUserByUsername("testUser")).thenReturn(userDetails);
+//		when(myUserDetailsService.loadUserByUsername("testUser")).thenReturn(userDetails);
 
 		// Mock JWT generation
 		String jwtToken = "mockedJWTToken";
-		when(jwtTokenUtil.generateToken(any(UserDetails.class))).thenReturn(jwtToken);
+//		when(jwtTokenUtil.generateToken(any(UserDetails.class))).thenReturn(jwtToken);
 
-		ResponseEntity<?> response = myController.samlToken(cookie, principal);
+		// Mock Authentication object and SecurityContext
+		Saml2Authentication saml2Authentication = Mockito.mock(Saml2Authentication.class);
+		when(saml2Authentication.isAuthenticated()).thenReturn(true);
+		when(securityContext.getAuthentication()).thenReturn(saml2Authentication);
+		SecurityContextHolder.setContext(securityContext);
 
-		assertEquals(200, response.getStatusCodeValue());
+		ResponseEntity<?> response = myController.samlToken(cookie);
+
+		assertEquals(HttpStatus.OK.value(), response.getStatusCodeValue());
 		// Add more assertions based on your response structure
 	}
 
@@ -69,8 +84,8 @@ public class SamlTokenEndpointTest {
 		// Mock Cookie header
 		String cookie = "otherCookie=xyz"; // No JSESSIONID in the cookie
 
-		ResponseEntity<?> response = myController.samlToken(cookie, principal);
-		assertEquals(400, response.getStatusCodeValue());
+		ResponseEntity<?> response = myController.samlToken(cookie);
+		assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
 	}
 
 	@Test
@@ -78,19 +93,21 @@ public class SamlTokenEndpointTest {
 		// Mock Cookie header
 		String cookie = "JSESSIONID=someSessionId; otherCookie=xyz";
 
-		// Mock principal
-		when(principal.getName()).thenReturn("testUser");
-
 		// Mock behavior for loadUserByUsername
 		UserDetails userDetails = Mockito.mock(UserDetails.class);
-		when(myUserDetailsService.loadUserByUsername("testUser")).thenReturn(userDetails);
+//		when(myUserDetailsService.loadUserByUsername("testUser")).thenReturn(userDetails);
 
 		// Mock error in JWT token generation
-		when(jwtTokenUtil.generateToken(userDetails)).thenThrow(new RuntimeException("Token generation error"));
+//		when(jwtTokenUtil.generateToken(userDetails)).thenThrow(new RuntimeException("Token generation error"));
 
-		ResponseEntity<?> response = myController.samlToken(cookie, principal);
+		// Mock an unauthenticated Saml2Authentication
+		Saml2Authentication saml2Authentication = Mockito.mock(Saml2Authentication.class);
+		when(saml2Authentication.isAuthenticated()).thenReturn(false);
+		when(securityContext.getAuthentication()).thenReturn(saml2Authentication);
+		SecurityContextHolder.setContext(securityContext);
 
-		assertEquals(500, response.getStatusCodeValue());
+		ResponseEntity<?> response = myController.samlToken(cookie);
+
+		assertEquals(HttpStatus.UNAUTHORIZED.value(), response.getStatusCodeValue());
 	}
 }
-

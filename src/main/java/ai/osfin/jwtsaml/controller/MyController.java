@@ -10,10 +10,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticatedPrincipal;
+import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -38,21 +41,26 @@ public class MyController {
 	}
 
 	@GetMapping("/login/saml-token")
-	public ResponseEntity<?> samlToken(@RequestHeader(value = "Cookie", required = false) String cookie,
-	                              @AuthenticationPrincipal Saml2AuthenticatedPrincipal principal) {
+	public ResponseEntity<?> samlToken(@RequestHeader(value = "Cookie", required = false) String cookie) {
 		boolean jsessionid = cookie != null && cookie.contains("JSESSIONID");
 		if (!jsessionid) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("JSESSIONID is not present");
 		}
 
-		// Check if Saml2AuthenticatedPrincipal is null
-		if (principal == null || principal.getName() == null) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body("SAML principal is null or doesn't contain a name");
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication instanceof Saml2Authentication && !authentication.isAuthenticated()) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body("SAML unauthenticated user");
 		}
+		// Cast the authentication object to Saml2Authentication
+		assert authentication instanceof Saml2Authentication;
+		Saml2Authentication saml2Authentication = (Saml2Authentication) authentication;
+
+		// Retrieve information from the SAML2 authentication token
+		String username = saml2Authentication.getName();
 
 		AuthenticationRequest request = new AuthenticationRequest();
-		request.setUsername(principal.getName()); // Assuming principal.getName() provides the username
+		request.setUsername(username);
 
 		try {
 			final UserDetails userDetails = myUserDetailsService
