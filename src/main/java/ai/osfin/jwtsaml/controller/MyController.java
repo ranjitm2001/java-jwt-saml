@@ -1,7 +1,10 @@
 package ai.osfin.jwtsaml.controller;
 
+import javax.servlet.http.HttpServletRequest;
+
 import ai.osfin.jwtsaml.dto.AuthenticationRequest;
 import ai.osfin.jwtsaml.dto.AuthenticationResponse;
+import ai.osfin.jwtsaml.dto.JwtSamlAuthenticationResponse;
 import ai.osfin.jwtsaml.services.MyUserDetailsService;
 import ai.osfin.jwtsaml.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,40 +44,38 @@ public class MyController {
 	}
 
 	@GetMapping("/login/saml-token")
-	public ResponseEntity<?> samlToken(@RequestHeader(value = "Cookie", required = false) String cookie) {
-		boolean jsessionid = cookie != null && cookie.contains("JSESSIONID");
-		if (!jsessionid) {
+	public ResponseEntity<?> samlToken(HttpServletRequest request, @RequestHeader(value = "Cookie", required = false) String cookie) {
+		boolean jSessionIdPresent = cookie != null && cookie.contains("JSESSIONID");
+		if (!jSessionIdPresent) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("JSESSIONID is not present");
 		}
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication instanceof Saml2Authentication && !authentication.isAuthenticated()) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-				.body("SAML unauthenticated user");
+		if (!(authentication instanceof Saml2Authentication saml2Authentication) || !authentication.isAuthenticated()) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("SAML unauthenticated user");
 		}
-		// Cast the authentication object to Saml2Authentication
-		assert authentication instanceof Saml2Authentication;
-		Saml2Authentication saml2Authentication = (Saml2Authentication) authentication;
 
-		// Retrieve information from the SAML2 authentication token
+		// Clear the Session so that it remains stateless, from the next request
+		request.getSession().invalidate();
+
 		String username = saml2Authentication.getName();
-
-		AuthenticationRequest request = new AuthenticationRequest();
-		request.setUsername(username);
+		AuthenticationRequest authenticationRequest = new AuthenticationRequest();
+		authenticationRequest.setUsername(username);
 
 		try {
-			final UserDetails userDetails = myUserDetailsService
-				.loadUserByUsername(request.getUsername());
+			final UserDetails userDetails = myUserDetailsService.loadUserByUsername(authenticationRequest.getUsername());
 
-			// Generate JWT token
+			// Update the JWT to include the SAML response token
 			final String jwt = jwtTokenUtil.generateToken(userDetails);
-			return ResponseEntity.ok(new AuthenticationResponse(jwt));
+
+			// Create the response object to return
+			JwtSamlAuthenticationResponse response = new JwtSamlAuthenticationResponse(jwt, saml2Authentication);
+
+			return ResponseEntity.ok(response);
 		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body("Error generating JWT token");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error generating tokens");
 		}
 	}
-
 
 	@PostMapping("/login/token")
 	public ResponseEntity<?> createJWTToken(@RequestBody AuthenticationRequest request) throws Exception {
