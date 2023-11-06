@@ -83,7 +83,7 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 
 		http
 			.sessionManagement()
-			.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED);
+			.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
 		http
 			.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
