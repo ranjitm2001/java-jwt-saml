@@ -4,6 +4,8 @@ import java.io.InputStream;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
+import java.util.Arrays;
+import java.util.List;
 
 import ai.osfin.jwtsaml.filters.JwtRequestFilter;
 import ai.osfin.jwtsaml.services.MyUserDetailsService;
@@ -34,6 +36,9 @@ import org.springframework.security.saml2.provider.service.web.Saml2Authenticati
 import org.springframework.security.saml2.provider.service.web.Saml2MetadataFilter;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @EnableWebSecurity
@@ -64,16 +69,19 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http
+			.cors();
+
+		http
 			.csrf().disable();
 
 		http.authorizeRequests()
 			.antMatchers("/", "/public/**", "/login/**").permitAll()
 			.antMatchers("/private/**").authenticated();
 
-		http
-			.saml2Login(saml2 -> saml2
-				.successHandler(successHandler()))
-			.saml2Logout(withDefaults());
+//		http
+//			.saml2Login(saml2 -> saml2
+//				.successHandler(successHandler()))
+//			.saml2Logout(withDefaults());
 
 		http
 			.sessionManagement()
@@ -81,7 +89,6 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 
 		http
 			.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
-
 	}
 
 	private SimpleUrlAuthenticationSuccessHandler successHandler() {
