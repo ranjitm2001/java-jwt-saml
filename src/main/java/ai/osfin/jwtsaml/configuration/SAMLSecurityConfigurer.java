@@ -4,10 +4,10 @@ import java.io.InputStream;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
-import java.util.Arrays;
-import java.util.List;
 
+import ai.osfin.jwtsaml.controller.MyController;
 import ai.osfin.jwtsaml.filters.JwtRequestFilter;
+import ai.osfin.jwtsaml.handler.CustomAuthenticationSuccessHandler;
 import ai.osfin.jwtsaml.services.MyUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,9 +36,6 @@ import org.springframework.security.saml2.provider.service.web.Saml2Authenticati
 import org.springframework.security.saml2.provider.service.web.Saml2MetadataFilter;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @EnableWebSecurity
@@ -49,6 +46,9 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 
 	@Autowired
 	private MyUserDetailsService myUserDetailsService;
+
+	@Autowired
+	private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -78,10 +78,10 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 			.antMatchers("/", "/public/**", "/login/**").permitAll()
 			.antMatchers("/private/**").authenticated();
 
-//		http
-//			.saml2Login(saml2 -> saml2
-//				.successHandler(successHandler()))
-//			.saml2Logout(withDefaults());
+		http
+			.saml2Login(saml2 -> saml2
+				.successHandler(customAuthenticationSuccessHandler))
+			.saml2Logout(withDefaults());
 
 		http
 			.sessionManagement()
@@ -93,7 +93,8 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 
 	private SimpleUrlAuthenticationSuccessHandler successHandler() {
 		SimpleUrlAuthenticationSuccessHandler successHandler = new SimpleUrlAuthenticationSuccessHandler();
-		successHandler.setDefaultTargetUrl("/login/saml-token"); // Set your custom success URL here
+		successHandler
+			.setDefaultTargetUrl("http://localhost:3000/login/saml-token?a=b");
 		return successHandler;
 	}
 
