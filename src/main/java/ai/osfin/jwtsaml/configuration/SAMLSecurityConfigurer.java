@@ -5,7 +5,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 
-import ai.osfin.jwtsaml.controller.MyController;
 import ai.osfin.jwtsaml.filters.JwtRequestFilter;
 import ai.osfin.jwtsaml.handler.CustomAuthenticationSuccessHandler;
 import ai.osfin.jwtsaml.services.MyUserDetailsService;
@@ -34,7 +33,6 @@ import org.springframework.security.saml2.provider.service.web.DefaultRelyingPar
 import org.springframework.security.saml2.provider.service.web.RelyingPartyRegistrationResolver;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationTokenConverter;
 import org.springframework.security.saml2.provider.service.web.Saml2MetadataFilter;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -89,13 +87,6 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 
 		http
 			.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
-	}
-
-	private SimpleUrlAuthenticationSuccessHandler successHandler() {
-		SimpleUrlAuthenticationSuccessHandler successHandler = new SimpleUrlAuthenticationSuccessHandler();
-		successHandler
-			.setDefaultTargetUrl("http://localhost:3000/login/saml-token?a=b");
-		return successHandler;
 	}
 
 	@Bean

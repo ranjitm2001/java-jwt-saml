@@ -38,7 +38,7 @@ public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			String jwt = jwtTokenUtil.generateToken(userDetails);
 
 			// Update the success URL with the token
-			String successUrl = "http://localhost:3000/login/saml-token?a=b&token=" + jwt;
+			String successUrl = "http://localhost:3000/login/saml-token?&token=" + jwt;
 			setDefaultTargetUrl(successUrl);
 		}
 		super.onAuthenticationSuccess(request, response, authentication);
