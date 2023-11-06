@@ -6,6 +6,7 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 
 import ai.osfin.jwtsaml.filters.JwtRequestFilter;
+import ai.osfin.jwtsaml.handler.CustomAuthenticationFailureHandler;
 import ai.osfin.jwtsaml.handler.CustomAuthenticationSuccessHandler;
 import ai.osfin.jwtsaml.services.MyUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,9 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
+	@Autowired
+	private CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
+
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		auth.userDetailsService(myUserDetailsService);
@@ -78,7 +82,9 @@ public class SAMLSecurityConfigurer extends WebSecurityConfigurerAdapter {
 
 		http
 			.saml2Login(saml2 -> saml2
-				.successHandler(customAuthenticationSuccessHandler))
+				.successHandler(customAuthenticationSuccessHandler)
+				.failureHandler(customAuthenticationFailureHandler)
+			)
 			.saml2Logout(withDefaults());
 
 		http
